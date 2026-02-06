@@ -1,0 +1,65 @@
+{
+  "name": "filetraits",
+  "publisher": "marsi-dev",
+  "displayName": "filetraits",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.108.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "filetraits.generateTrait",
+        "title": "Filetraits: Create Trait from Template"
+      },
+      {
+        "command": "filetraits.applyTrait",
+        "title": "Filetraits: Apply Trait"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Templates",
+      "properties": {
+        "filetraits.traitsDirectory": {
+          "type": "string",
+          "default": "./.vscode/filetraits",
+          "description": "Path (relative to workspace root) where user defined traits are stored."
+        },
+        "filetraits.templateDirectory": {
+          "type": "string",
+          "default": "./.vscode/filetraits/templates",
+          "description": "Path (relative to workspace root) where Mustache templates are stored."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/luxon": "^3.7.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.109.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.39.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0"
+  },
+  "dependencies": {
+    "jiti": "^2.6.1",
+    "luxon": "^3.7.2"
+  }
+}
