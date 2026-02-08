@@ -32,7 +32,7 @@ async function loadTrait(traitPath: string): Promise<Trait> {
 
 async function loadTraits(): Promise<{
   workspaceRoot: string;
-  traits: Record<string, Trait>;
+  traits: Trait[];
 }> {
   // TODO take from configuration property filetraits.traitsDirectory
   const activeEditor = vscode.window.activeTextEditor;
@@ -57,15 +57,11 @@ async function loadTraits(): Promise<{
   await access(dirName, fs.constants.R_OK);
 
   const files: string[] = await readdir(dirName);
-  const traitList = await Promise.all(
+  const traits = await Promise.all(
     files
       .filter((file) => file.endsWith(".ts"))
-      .map((file) => loadTrait(path.join(dirName, file))),
-  );
-
-  const traits = traitList.reduce(
-    (acc, trait) => ({ ...acc, [trait.name]: trait }),
-    {} as Record<string, Trait>,
+      .map((file) => loadTrait(path.join(dirName, file)))
+      .filter((trait) => trait !== undefined),
   );
 
   return { workspaceRoot, traits };
@@ -114,59 +110,99 @@ async function getContext(workspaceRoot: string): Promise<TraitContext> {
   };
 }
 
+export async function showFileSelector(
+  initialValue: string,
+): Promise<string | undefined> {
+  return new Promise((resolve, reject) => {
+    const quickPick = vscode.window.createQuickPick();
+    quickPick.value = initialValue;
+    quickPick.canSelectMany = false;
+    quickPick.show();
+
+    quickPick.onDidChangeValue(async (value) => {
+      if (!value) {
+        quickPick.items = [];
+        return;
+      }
+
+      // Use a glob pattern for prefix matching
+      // Example: "src/app" becomes "**/src/app*"
+      const pattern = `**/${value}*`;
+
+      quickPick.busy = true; // Show loading indicator
+      try {
+        const uris = await vscode.workspace.findFiles(pattern, null, 10);
+
+        quickPick.items = uris.map((uri) => {
+          const relativePath = path.parse(vscode.workspace.asRelativePath(uri));
+
+          const rootDir = relativePath.dir.split(path.sep)?.[0];
+
+          return {
+            // TODO trim extension
+            label: path.join(relativePath.dir, relativePath.name),
+            // TODO additional info (e.g. vault)
+            description: `(${rootDir})`,
+          };
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        quickPick.busy = false;
+      }
+    });
+
+    quickPick.onDidAccept(() => {
+      quickPick.hide();
+      resolve(quickPick.value);
+    });
+  });
+}
+
 async function applyTrait(): Promise<void> {
   const { workspaceRoot, traits } = await loadTraits();
 
-  const traitName: string | undefined = await vscode.window.showQuickPick(
-    Object.keys(traits),
+  const selectedTrait = await vscode.window.showQuickPick(
+    Object.values(traits).map((trait) => ({
+      label: trait.name,
+      trait,
+    })),
     {
       canPickMany: false,
       placeHolder: "Select trait",
     },
   );
 
-  if (!traitName) {
-    return Promise.reject("No trait selected");
+  if (!selectedTrait) {
+    return Promise.resolve();
   }
 
-  const trait = traits[traitName];
+  const trait = selectedTrait.trait;
 
   const context = await getContext(workspaceRoot);
 
-  vscode.window.showInformationMessage("context: " + JSON.stringify(context));
-
   const directory = trait.getDirectory ? trait.getDirectory(context) : ".";
-  const { name, selection } = trait.getName(context);
-
-  vscode.window.showInformationMessage(`directory=${directory}`);
+  const { name, extension } = trait.getName(context);
 
   const newWorkspacePath = path.join(directory, name);
-  const newPath = await vscode.window.showInputBox({
-    value: newWorkspacePath,
-    valueSelection:
-      selection && newWorkspacePath !== name
-        ? [
-            selection[0] + directory.length + 1 /* slash */,
-            selection[1] + directory.length + 1,
-          ]
-        : selection,
-  });
 
-  const newFilePath = path.join(workspaceRoot, newPath ?? newWorkspacePath);
+  const newPath = await showFileSelector(newWorkspacePath);
 
-  vscode.window.showInformationMessage(newFilePath);
+  const newFilePath =
+    path.join(workspaceRoot, newPath ?? newWorkspacePath) + (extension ?? "");
 
   access(newFilePath)
     .then(() => {
       vscode.window.showWarningMessage("File already exists.");
+      return true;
     })
     .catch(async () => {
-      // file doesn't exist, we want to create it and apply template
-      await writeFile(newFilePath, "" /* TODO contents */);
+      await writeFile(newFilePath, "");
+      return false;
     })
-    .then(async () => {
+    .then(async (fileAlreadyExists) => {
       const doc = await vscode.workspace.openTextDocument(newFilePath);
-      await vscode.window.showTextDocument(doc);
+      const editor = await vscode.window.showTextDocument(doc);
     });
 }
 

@@ -17,6 +17,10 @@ export type TraitContext = {
   };
 };
 
+export type TemplateContext = TraitContext & {
+  newBaseName: string;
+};
+
 export type Trait = {
   /**
    * trait name
@@ -36,20 +40,13 @@ export type Trait = {
 
   getName: (context: TraitContext) => {
     name: string;
-    selection?: [number, number];
+    extension?: string;
   };
 
   /**
    * true by default
    */
   editName?: boolean;
-
-  /**
-   * no template is used by default
-   * @param context
-   * @returns
-   */
-  getTemplatePath?: (context: TraitContext) => string;
 };
 
 declare global {
