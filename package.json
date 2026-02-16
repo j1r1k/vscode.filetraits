@@ -3,6 +3,10 @@
   "publisher": "marsi-dev",
   "displayName": "filetraits",
   "description": "",
+  "repository": {
+    "url": "https://github.com/j1r1k/vscode.filetraits",
+    "type": "git"
+  },
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.108.0"
