@@ -1,5 +1,3 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import path from "path";
 import fs from "fs";
@@ -174,7 +172,6 @@ async function applyTrait(): Promise<void> {
 }
 
 async function generateTrait() {
-  // 1. Check if a workspace is open
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders) {
     vscode.window.showErrorMessage(
@@ -191,13 +188,9 @@ async function generateTrait() {
     return;
   }
 
-  // Resolve the path to your bundled .d.ts file
   const dtsPath = path.join(extension.extensionPath, "types", "public.d.ts");
-
-  // Define the template content
   const templateContent = traitTemplate(dtsPath);
 
-  // Define new trait name promoting user for input
   const traitName = await vscode.window.showInputBox({
     prompt: "Enter the file name of the new trait",
     placeHolder: "e.g., MyCustomTrait",
@@ -223,7 +216,6 @@ async function generateTrait() {
 
     fs.writeFileSync(filePath, templateContent);
 
-    // 5. Open the newly created file
     const doc = await vscode.workspace.openTextDocument(filePath);
     await vscode.window.showTextDocument(doc);
 
@@ -245,5 +237,4 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}
