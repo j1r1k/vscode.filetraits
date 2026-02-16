@@ -65,3 +65,9 @@ jobs:
           name: ${{ steps.version.outputs.tag }}
           generate_release_notes: true
           files: dist/*.vsix
+
+      - name: Publish to VS Code Marketplace
+        if: env.VSCE_PAT != ''
+        run: npx vsce publish --no-yarn
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
