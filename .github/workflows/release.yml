@@ -30,15 +30,25 @@ jobs:
 
       - run: npm run compile
 
-      - name: Determine version
+      - name: Verify version
         id: version
         run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            VERSION="${GITHUB_REF_NAME#v}"
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+            if [[ "$PKG_VERSION" != "$TAG_VERSION" ]]; then
+              echo "::error::package.json version ($PKG_VERSION) does not match tag ($TAG_VERSION). Run 'npm version $TAG_VERSION --no-git-tag-version' and commit before tagging."
+              exit 1
+            fi
+            VERSION="$TAG_VERSION"
           elif [[ -n "${{ inputs.version }}" ]]; then
+            if [[ "$PKG_VERSION" != "${{ inputs.version }}" ]]; then
+              echo "::error::package.json version ($PKG_VERSION) does not match requested version (${{ inputs.version }}). Update package.json first."
+              exit 1
+            fi
             VERSION="${{ inputs.version }}"
           else
-            VERSION=$(node -p "require('./package.json').version")
+            VERSION="$PKG_VERSION"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
