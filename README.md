@@ -2,6 +2,8 @@
 
 A VS Code extension that lets you define **traits** — TypeScript-based rules that control how new files are named and where they are placed in your workspace.
 
+Inspired by [traits in Dendron](https://wiki.dendron.so/notes/bdZhT3nF8Yz3WDzKp7hqh/) (no longer maintained).
+
 ## How It Works
 
 1. Define trait files in your workspace (by default in `.vscode/filetraits/`)
