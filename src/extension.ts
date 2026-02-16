@@ -30,11 +30,16 @@ async function loadTrait(traitPath: string): Promise<Trait> {
   }
 }
 
+function getTraitsDirectory(workspaceRoot: string): string {
+  const config = vscode.workspace.getConfiguration("filetraits");
+  const traitsDir = config.get<string>("traitsDirectory", "./.vscode/filetraits");
+  return path.resolve(workspaceRoot, traitsDir);
+}
+
 async function loadTraits(): Promise<{
   workspaceRoot: string;
   traits: Trait[];
 }> {
-  // TODO take from configuration property filetraits.traitsDirectory
   const activeEditor = vscode.window.activeTextEditor;
 
   if (!vscode.workspace.workspaceFolders) {
@@ -51,8 +56,7 @@ async function loadTraits(): Promise<{
 
   const workspaceRoot = workspaceFolder.uri.fsPath;
 
-  // TODO configurable path
-  const dirName = path.join(workspaceRoot, ".vscode", "filetraits");
+  const dirName = getTraitsDirectory(workspaceRoot);
 
   await access(dirName, fs.constants.R_OK);
 
@@ -191,7 +195,7 @@ async function applyTrait(): Promise<void> {
   const newFilePath =
     path.join(workspaceRoot, newPath ?? newWorkspacePath) + (extension ?? "");
 
-  access(newFilePath)
+  return access(newFilePath)
     .then(() => {
       vscode.window.showWarningMessage("File already exists.");
       return true;
@@ -241,9 +245,7 @@ async function generateTrait() {
     return;
   }
 
-  // 4. Create the file (e.g., .vscode/my-trait.ts)
-  // TODO configurable
-  const dotVscodeDir = path.join(rootPath, ".vscode", "filetraits");
+  const dotVscodeDir = getTraitsDirectory(rootPath);
   const filePath = path.join(dotVscodeDir, `${traitName}.ts`);
 
   try {
