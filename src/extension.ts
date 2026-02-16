@@ -3,37 +3,19 @@
 import * as vscode from "vscode";
 import path from "path";
 import fs from "fs";
-import { ActiveDocumentContext, Trait, TraitContext } from "../types/public";
+import { Trait, TraitContext } from "../types/public";
 import { traitTemplate } from "./trait";
 import { extensionId } from "./globals";
+import { buildActiveDocumentContext } from "./documentContext";
+import { resolveTraitsDirectory } from "./traitsDirectory";
+import { loadTrait } from "./loadTrait";
 import { access, readdir, writeFile } from "fs/promises";
 import { DateTime } from "luxon";
-
-// Use 'require' or a dynamic import for the actual factory to bypass the CJS/ESM strict check
-const { createJiti } = require("jiti");
-
-async function loadTrait(traitPath: string): Promise<Trait> {
-  // Inject the helper so the script doesn't crash
-  (global as any).defineTrait = (trait: Trait) => trait;
-
-  try {
-    const jiti = createJiti(__filename, {
-      cache: false,
-      requireCache: false,
-      interopDefault: true,
-    });
-
-    const trait: Trait = await jiti.import(traitPath, { default: true });
-    return trait;
-  } finally {
-    delete (global as any).defineTrait;
-  }
-}
 
 function getTraitsDirectory(workspaceRoot: string): string {
   const config = vscode.workspace.getConfiguration("filetraits");
   const traitsDir = config.get<string>("traitsDirectory", "./.vscode/filetraits");
-  return path.resolve(workspaceRoot, traitsDir);
+  return resolveTraitsDirectory(workspaceRoot, traitsDir);
 }
 
 async function loadTraits(): Promise<{
@@ -73,36 +55,17 @@ async function loadTraits(): Promise<{
 
 function getActiveDocumentContext(
   workspaceRootPath: string,
-): ActiveDocumentContext | undefined {
+) {
   const activeTextEditor = vscode.window.activeTextEditor;
 
   if (!activeTextEditor) {
     return undefined;
   }
 
-  const absolutePath = activeTextEditor.document.uri.path;
-
-  const absoluteDirpath = path.dirname(absolutePath);
-
-  const workspacePath = absolutePath.startsWith(workspaceRootPath + "/")
-    ? absolutePath.slice((workspaceRootPath + "/").length)
-    : absolutePath;
-
-  const workspaceDirpath = path.dirname(workspacePath);
-
-  const baseName = path.basename(absolutePath);
-
-  const extension = path.extname(absolutePath);
-
-  return {
+  return buildActiveDocumentContext(
     workspaceRootPath,
-    absolutePath,
-    absoluteDirpath,
-    workspacePath,
-    workspaceDirpath,
-    baseName,
-    extension,
-  };
+    activeTextEditor.document.uri.path,
+  );
 }
 
 async function getContext(workspaceRoot: string): Promise<TraitContext> {
