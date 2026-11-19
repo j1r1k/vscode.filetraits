@@ -30,6 +30,11 @@ export type Trait = {
    * optional description of the trait
    */
   description?: string;
+  /**
+   * optional key used instead of `name` when sorting traits in the picker,
+   * e.g. "daily.zzz" places a trait after "daily.*" traits
+   */
+  sortBy?: string;
 
   /**
    * current directory by default

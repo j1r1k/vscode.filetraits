@@ -5,6 +5,8 @@ export function traitTemplate(dtsPath: string): string {
 export default defineTrait({
   name: "New Trait",
   description: "Describe what this trait does here",
+  // Optional: key used instead of name when sorting traits in the picker
+  // sortBy: "New Trait",
 
   getDirectoryPath: (ctx) => {
     // Return the directory where the new file should be created

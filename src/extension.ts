@@ -128,10 +128,12 @@ async function applyTrait(): Promise<void> {
   const { workspaceRoot, traits } = await loadTraits();
 
   const selectedTrait = await vscode.window.showQuickPick(
-    Object.values(traits).map((trait) => ({
-      label: trait.name,
-      trait,
-    })),
+    Object.values(traits)
+      .sort((a, b) => (a.sortBy ?? a.name).localeCompare(b.sortBy ?? b.name))
+      .map((trait) => ({
+        label: trait.name,
+        trait,
+      })),
     {
       canPickMany: false,
       placeHolder: "Select trait",
